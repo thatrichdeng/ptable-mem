@@ -1,0 +1,967 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Periodic Table Drill</title>
+  <style>
+    :root{
+      --cell: 54px;
+      --gap: 4px;
+      --border: #cfd6df;
+      --bg: #0b0d12;
+      --panel: #121622;
+      --panel2: #0f1320;
+      --text: #e7ebf2;
+      --muted: #aab3c2;
+      --good: #2ecc71;
+      --bad: #ff5c5c;
+      --sel: #3b82f6;
+      --quiz: #f59e0b;
+    }
+    *{ box-sizing: border-box; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: radial-gradient(1200px 800px at 20% 0%, #151a2a 0%, var(--bg) 50%, #070810 100%);
+      color: var(--text);
+    }
+    .wrap{
+      max-width: 1400px;
+      margin: 18px auto;
+      padding: 0 16px 24px;
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 14px;
+    }
+    @media (max-width: 1100px){
+      .wrap{ grid-template-columns: 1fr; }
+    }
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      overflow: hidden;
+    }
+    header{
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display:flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+    }
+    header h1{
+      margin:0;
+      font-size: 18px;
+      letter-spacing: 0.2px;
+    }
+    header .hint{
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.2;
+    }
+    .content{ padding: 14px 16px 16px; }
+
+    /* Table grid */
+    .ptable{
+      display:grid;
+      grid-template-columns: repeat(18, var(--cell));
+      grid-auto-rows: var(--cell);
+      gap: var(--gap);
+      user-select: none;
+      touch-action: none;
+      padding-bottom: 8px;
+    }
+    .cell{
+      position: relative;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.03);
+      display:flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items:center;
+      cursor: pointer;
+      transition: transform 0.06s ease, background 0.15s ease, border-color 0.15s ease;
+      overflow:hidden;
+    }
+    .cell:hover{ transform: translateY(-1px); border-color: rgba(255,255,255,0.18); }
+    .cell.empty{
+      background: transparent;
+      border: 1px dashed rgba(255,255,255,0.08);
+      cursor: default;
+      opacity: 0.35;
+    }
+    .cell .num{
+      position:absolute;
+      top: 6px; left: 7px;
+      font-size: 10px;
+      color: rgba(255,255,255,0.65);
+    }
+    .cell .sym{
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 0.3px;
+      line-height: 1;
+    }
+    .cell .name{
+      font-size: 9.5px;
+      color: rgba(255,255,255,0.75);
+      margin-top: 3px;
+      text-align:center;
+      padding: 0 3px;
+      line-height: 1.05;
+    }
+
+    /* Selection + quiz highlight */
+    .cell.selected{
+      border-color: rgba(59,130,246,0.95);
+      box-shadow: 0 0 0 2px rgba(59,130,246,0.25) inset;
+      background: rgba(59,130,246,0.10);
+    }
+    .cell.temp{
+      border-color: rgba(59,130,246,0.65);
+      background: rgba(59,130,246,0.07);
+    }
+    .cell.quiz{
+      border-color: rgba(245,158,11,0.95);
+      box-shadow: 0 0 0 3px rgba(245,158,11,0.20) inset, 0 0 20px rgba(245,158,11,0.25);
+      background: rgba(245,158,11,0.10);
+    }
+
+    /* Controls */
+    .row{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin: 10px 0;
+    }
+    button{
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 9px 12px;
+      cursor:pointer;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    button:hover{ border-color: rgba(255,255,255,0.20); background: rgba(255,255,255,0.08); }
+    button.primary{
+      background: rgba(59,130,246,0.22);
+      border-color: rgba(59,130,246,0.38);
+    }
+    button.danger{
+      background: rgba(255,92,92,0.18);
+      border-color: rgba(255,92,92,0.30);
+    }
+    .toggle{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      font-size: 13px;
+      color: var(--muted);
+    }
+    input[type="checkbox"]{ transform: translateY(1px); }
+
+    /* Quiz panel */
+    .quizBox{
+      background: rgba(0,0,0,0.20);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 12px;
+      margin-top: 10px;
+    }
+    .quizTop{
+      display:flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .status{
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .prompt{
+      margin-top: 8px;
+      font-size: 14px;
+      color: var(--text);
+    }
+    .answerRow{
+      margin-top: 10px;
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    input[type="text"]{
+      flex: 1 1 220px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 14px;
+      outline:none;
+    }
+    input[type="text"]:focus{
+      border-color: rgba(59,130,246,0.55);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+    }
+    .feedback{
+      margin-top: 10px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .feedback.good{ color: var(--good); }
+    .feedback.bad{ color: var(--bad); }
+    .small{
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+      line-height: 1.35;
+    }
+
+    /* Sidebar */
+    .stats{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .stat{
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 10px 12px;
+    }
+    .stat .k{ color: var(--muted); font-size: 12px; }
+    .stat .v{ font-size: 18px; font-weight: 800; margin-top: 2px; }
+
+    table{
+      width:100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+    th, td{
+      text-align:left;
+      padding: 8px 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      vertical-align: top;
+    }
+    th{ color: var(--muted); font-weight: 700; }
+    .pill{
+      display:inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+    }
+    .pill.good{ background: rgba(46,204,113,0.18); border:1px solid rgba(46,204,113,0.25); color: var(--good); }
+    .pill.bad{ background: rgba(255,92,92,0.16); border:1px solid rgba(255,92,92,0.25); color: var(--bad); }
+
+    .missedList{
+      margin-top: 12px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding-top: 10px;
+    }
+    .missedList h3{
+      margin: 0 0 8px;
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 800;
+      letter-spacing: 0.2px;
+    }
+    .chips{ display:flex; flex-wrap: wrap; gap: 8px; }
+    .chip{
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.10);
+      font-size: 12px;
+      color: var(--text);
+    }
+    .chip b{ color: var(--bad); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- Left: Periodic table + quiz -->
+    <div class="card">
+      <header>
+        <h1>Periodic Table Drill</h1>
+        <div class="hint">
+          Drag to select a region to study (drag = replace selection).<br/>
+          Hold <b>Shift</b> while dragging to <b>add</b>, hold <b>Alt/Option</b> to <b>subtract</b>.
+        </div>
+      </header>
+      <div class="content">
+        <div id="ptable" class="ptable" aria-label="Periodic table grid"></div>
+
+        <div class="row">
+          <button id="clearSelBtn">Clear selection</button>
+          <button id="selectAllBtn">Select all</button>
+          <button id="startQuizBtn" class="primary">Start / Next question</button>
+
+          <label class="toggle" title="If ON: choose only elements you’ve missed before. If none exist in the selection, it falls back to normal.">
+            <input id="missedOnlyToggle" type="checkbox" />
+            Quiz frequently missed only
+          </label>
+
+          <button id="resetHistoryBtn" class="danger">Reset history</button>
+        </div>
+
+        <div class="quizBox">
+          <div class="quizTop">
+            <div class="status" id="quizStatus">Select a region, then click “Start / Next question”.</div>
+            <div class="status" id="poolStatus"></div>
+          </div>
+          <div class="prompt" id="quizPrompt">No active question.</div>
+          <div class="answerRow">
+            <input id="answerInput" type="text" placeholder="Type element name or symbol (e.g., Iron or Fe)..." disabled />
+            <button id="submitBtn" class="primary" disabled>Submit</button>
+            <button id="skipBtn" disabled>Skip</button>
+            <button id="revealBtn" disabled>Reveal</button>
+          </div>
+          <div id="feedback" class="feedback" aria-live="polite"></div>
+          <div class="small">
+            Accepted answers: full name or symbol (case-insensitive). Examples: “sodium” or “Na”.<br/>
+            Tip: Press <b>Enter</b> to submit.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Stats + history -->
+    <div class="card">
+      <header>
+        <h1>History & Stats</h1>
+        <div class="hint">Stored locally in your browser (localStorage).</div>
+      </header>
+      <div class="content">
+        <div class="stats">
+          <div class="stat">
+            <div class="k">Total attempts</div>
+            <div class="v" id="statAttempts">0</div>
+          </div>
+          <div class="stat">
+            <div class="k">Accuracy</div>
+            <div class="v" id="statAcc">0%</div>
+          </div>
+          <div class="stat">
+            <div class="k">Correct</div>
+            <div class="v" id="statCorrect">0</div>
+          </div>
+          <div class="stat">
+            <div class="k">Incorrect</div>
+            <div class="v" id="statIncorrect">0</div>
+          </div>
+        </div>
+
+        <div class="missedList">
+          <h3>Most missed (in your selected pool)</h3>
+          <div id="missedChips" class="chips"></div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 92px;">Result</th>
+              <th style="width: 95px;">Element</th>
+              <th>Your answer</th>
+              <th style="width: 155px;">Time</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+<script>
+/**
+ * Periodic Table Drill
+ * - Drag-select rectangle region to quiz
+ * - Quiz highlights a cell; you type name or symbol
+ * - Stores per-element stats + attempt log in localStorage
+ */
+
+const STORAGE_KEY = "ptable_drill_v1";
+
+const ELEMENTS = [
+  // atomicNumber, symbol, name, period, group, rowOverride(optional), colOverride(optional)
+  // Main table
+  [1,"H","Hydrogen",1,1],
+  [2,"He","Helium",1,18],
+  [3,"Li","Lithium",2,1],
+  [4,"Be","Beryllium",2,2],
+  [5,"B","Boron",2,13],
+  [6,"C","Carbon",2,14],
+  [7,"N","Nitrogen",2,15],
+  [8,"O","Oxygen",2,16],
+  [9,"F","Fluorine",2,17],
+  [10,"Ne","Neon",2,18],
+  [11,"Na","Sodium",3,1],
+  [12,"Mg","Magnesium",3,2],
+  [13,"Al","Aluminum",3,13],
+  [14,"Si","Silicon",3,14],
+  [15,"P","Phosphorus",3,15],
+  [16,"S","Sulfur",3,16],
+  [17,"Cl","Chlorine",3,17],
+  [18,"Ar","Argon",3,18],
+  [19,"K","Potassium",4,1],
+  [20,"Ca","Calcium",4,2],
+  [21,"Sc","Scandium",4,3],
+  [22,"Ti","Titanium",4,4],
+  [23,"V","Vanadium",4,5],
+  [24,"Cr","Chromium",4,6],
+  [25,"Mn","Manganese",4,7],
+  [26,"Fe","Iron",4,8],
+  [27,"Co","Cobalt",4,9],
+  [28,"Ni","Nickel",4,10],
+  [29,"Cu","Copper",4,11],
+  [30,"Zn","Zinc",4,12],
+  [31,"Ga","Gallium",4,13],
+  [32,"Ge","Germanium",4,14],
+  [33,"As","Arsenic",4,15],
+  [34,"Se","Selenium",4,16],
+  [35,"Br","Bromine",4,17],
+  [36,"Kr","Krypton",4,18],
+  [37,"Rb","Rubidium",5,1],
+  [38,"Sr","Strontium",5,2],
+  [39,"Y","Yttrium",5,3],
+  [40,"Zr","Zirconium",5,4],
+  [41,"Nb","Niobium",5,5],
+  [42,"Mo","Molybdenum",5,6],
+  [43,"Tc","Technetium",5,7],
+  [44,"Ru","Ruthenium",5,8],
+  [45,"Rh","Rhodium",5,9],
+  [46,"Pd","Palladium",5,10],
+  [47,"Ag","Silver",5,11],
+  [48,"Cd","Cadmium",5,12],
+  [49,"In","Indium",5,13],
+  [50,"Sn","Tin",5,14],
+  [51,"Sb","Antimony",5,15],
+  [52,"Te","Tellurium",5,16],
+  [53,"I","Iodine",5,17],
+  [54,"Xe","Xenon",5,18],
+  [55,"Cs","Cesium",6,1],
+  [56,"Ba","Barium",6,2],
+  [57,"La","Lanthanum",6,3],      // shown in main table
+  [72,"Hf","Hafnium",6,4],
+  [73,"Ta","Tantalum",6,5],
+  [74,"W","Tungsten",6,6],
+  [75,"Re","Rhenium",6,7],
+  [76,"Os","Osmium",6,8],
+  [77,"Ir","Iridium",6,9],
+  [78,"Pt","Platinum",6,10],
+  [79,"Au","Gold",6,11],
+  [80,"Hg","Mercury",6,12],
+  [81,"Tl","Thallium",6,13],
+  [82,"Pb","Lead",6,14],
+  [83,"Bi","Bismuth",6,15],
+  [84,"Po","Polonium",6,16],
+  [85,"At","Astatine",6,17],
+  [86,"Rn","Radon",6,18],
+  [87,"Fr","Francium",7,1],
+  [88,"Ra","Radium",7,2],
+  [89,"Ac","Actinium",7,3],       // shown in main table
+  [104,"Rf","Rutherfordium",7,4],
+  [105,"Db","Dubnium",7,5],
+  [106,"Sg","Seaborgium",7,6],
+  [107,"Bh","Bohrium",7,7],
+  [108,"Hs","Hassium",7,8],
+  [109,"Mt","Meitnerium",7,9],
+  [110,"Ds","Darmstadtium",7,10],
+  [111,"Rg","Roentgenium",7,11],
+  [112,"Cn","Copernicium",7,12],
+  [113,"Nh","Nihonium",7,13],
+  [114,"Fl","Flerovium",7,14],
+  [115,"Mc","Moscovium",7,15],
+  [116,"Lv","Livermorium",7,16],
+  [117,"Ts","Tennessine",7,17],
+  [118,"Og","Oganesson",7,18],
+
+  // Lanthanides row (display row 9, columns 4..17)
+  [58,"Ce","Cerium",6,0,9,4],
+  [59,"Pr","Praseodymium",6,0,9,5],
+  [60,"Nd","Neodymium",6,0,9,6],
+  [61,"Pm","Promethium",6,0,9,7],
+  [62,"Sm","Samarium",6,0,9,8],
+  [63,"Eu","Europium",6,0,9,9],
+  [64,"Gd","Gadolinium",6,0,9,10],
+  [65,"Tb","Terbium",6,0,9,11],
+  [66,"Dy","Dysprosium",6,0,9,12],
+  [67,"Ho","Holmium",6,0,9,13],
+  [68,"Er","Erbium",6,0,9,14],
+  [69,"Tm","Thulium",6,0,9,15],
+  [70,"Yb","Ytterbium",6,0,9,16],
+  [71,"Lu","Lutetium",6,0,9,17],
+
+  // Actinides row (display row 10, columns 4..17)
+  [90,"Th","Thorium",7,0,10,4],
+  [91,"Pa","Protactinium",7,0,10,5],
+  [92,"U","Uranium",7,0,10,6],
+  [93,"Np","Neptunium",7,0,10,7],
+  [94,"Pu","Plutonium",7,0,10,8],
+  [95,"Am","Americium",7,0,10,9],
+  [96,"Cm","Curium",7,0,10,10],
+  [97,"Bk","Berkelium",7,0,10,11],
+  [98,"Cf","Californium",7,0,10,12],
+  [99,"Es","Einsteinium",7,0,10,13],
+  [100,"Fm","Fermium",7,0,10,14],
+  [101,"Md","Mendelevium",7,0,10,15],
+  [102,"No","Nobelium",7,0,10,16],
+  [103,"Lr","Lawrencium",7,0,10,17],
+];
+
+const ptableEl = document.getElementById("ptable");
+const startQuizBtn = document.getElementById("startQuizBtn");
+const clearSelBtn = document.getElementById("clearSelBtn");
+const selectAllBtn = document.getElementById("selectAllBtn");
+const resetHistoryBtn = document.getElementById("resetHistoryBtn");
+const missedOnlyToggle = document.getElementById("missedOnlyToggle");
+const answerInput = document.getElementById("answerInput");
+const submitBtn = document.getElementById("submitBtn");
+const skipBtn = document.getElementById("skipBtn");
+const revealBtn = document.getElementById("revealBtn");
+const quizStatus = document.getElementById("quizStatus");
+const poolStatus = document.getElementById("poolStatus");
+const quizPrompt = document.getElementById("quizPrompt");
+const feedbackEl = document.getElementById("feedback");
+const historyBody = document.getElementById("historyBody");
+const statAttempts = document.getElementById("statAttempts");
+const statAcc = document.getElementById("statAcc");
+const statCorrect = document.getElementById("statCorrect");
+const statIncorrect = document.getElementById("statIncorrect");
+const missedChips = document.getElementById("missedChips");
+
+const GRID_ROWS = 10;  // periods 1-7 plus lanth/act rows
+const GRID_COLS = 18;
+
+const elementsByZ = new Map();
+const elementsByPos = new Map(); // key "r,c" -> element
+
+for (const e of ELEMENTS){
+  const [z,sym,name,period,group,rowO,colO] = e;
+  const row = rowO ?? period;
+  const col = colO ?? group;
+  elementsByZ.set(z, {z, sym, name, period, group, row, col});
+  elementsByPos.set(`${row},${col}`, {z, sym, name, period, group, row, col});
+}
+
+/* ---------- Persistence (history + per-element stats) ---------- */
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return { statsByZ: {}, log: [] };
+    const parsed = JSON.parse(raw);
+    if(!parsed || typeof parsed !== "object") throw new Error("bad");
+    parsed.statsByZ ??= {};
+    parsed.log ??= [];
+    return parsed;
+  }catch{
+    return { statsByZ: {}, log: [] };
+  }
+}
+function saveState(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+let state = loadState();
+
+function getElemStats(z){
+  if(!state.statsByZ[z]) state.statsByZ[z] = { correct:0, incorrect:0, seen:0 };
+  return state.statsByZ[z];
+}
+function recordAttempt({z, userAnswer, correct, revealed=false, skipped=false}){
+  const st = getElemStats(z);
+  st.seen += 1;
+  if(skipped){
+    // treat skip as "seen" but neither correct nor incorrect
+  } else if(revealed){
+    // treat reveal as incorrect (you can change this if you want)
+    st.incorrect += 1;
+  } else if(correct){
+    st.correct += 1;
+  } else {
+    st.incorrect += 1;
+  }
+
+  const el = elementsByZ.get(z);
+  state.log.unshift({
+    t: Date.now(),
+    z,
+    sym: el.sym,
+    name: el.name,
+    userAnswer,
+    result: skipped ? "SKIP" : (revealed ? "REVEAL" : (correct ? "OK" : "NO")),
+  });
+  // keep log from growing forever
+  if(state.log.length > 2500) state.log.length = 2500;
+
+  saveState();
+  renderSidebar();
+}
+
+/* ---------- Build UI grid ---------- */
+function buildGrid(){
+  ptableEl.innerHTML = "";
+
+  for(let r=1; r<=GRID_ROWS; r++){
+    for(let c=1; c<=GRID_COLS; c++){
+      const key = `${r},${c}`;
+      const el = elementsByPos.get(key);
+
+      const div = document.createElement("div");
+      div.className = "cell" + (el ? "" : " empty");
+      div.dataset.row = String(r);
+      div.dataset.col = String(c);
+      if(el){
+        div.dataset.z = String(el.z);
+        div.innerHTML = `
+          <div class="num">${el.z}</div>
+          <div class="sym">${el.sym}</div>
+          <div class="name">${el.name}</div>
+        `;
+      } else {
+        div.innerHTML = "";
+      }
+      ptableEl.appendChild(div);
+    }
+  }
+}
+buildGrid();
+
+/* ---------- Selection logic (drag rectangle) ---------- */
+let selected = new Set();     // Set of atomic numbers
+let isDragging = false;
+let dragStart = null;
+let dragMode = "replace";     // replace | add | subtract
+
+function clearTemp(){
+  document.querySelectorAll(".cell.temp").forEach(n => n.classList.remove("temp"));
+}
+function applySelectedClasses(){
+  document.querySelectorAll(".cell.selected").forEach(n => n.classList.remove("selected"));
+  for(const z of selected){
+    const cell = document.querySelector(`.cell[data-z="${z}"]`);
+    if(cell) cell.classList.add("selected");
+  }
+  updatePoolStatus();
+  renderSidebar();
+}
+function rectCells(r1,c1,r2,c2){
+  const rr1 = Math.min(r1,r2), rr2 = Math.max(r1,r2);
+  const cc1 = Math.min(c1,c2), cc2 = Math.max(c1,c2);
+  const zs = [];
+  for(let r=rr1; r<=rr2; r++){
+    for(let c=cc1; c<=cc2; c++){
+      const el = elementsByPos.get(`${r},${c}`);
+      if(el) zs.push(el.z);
+    }
+  }
+  return zs;
+}
+function showTempRect(r1,c1,r2,c2){
+  clearTemp();
+  const rr1 = Math.min(r1,r2), rr2 = Math.max(r1,r2);
+  const cc1 = Math.min(c1,c2), cc2 = Math.max(c1,c2);
+  for(let r=rr1; r<=rr2; r++){
+    for(let c=cc1; c<=cc2; c++){
+      const el = elementsByPos.get(`${r},${c}`);
+      if(el){
+        const cell = document.querySelector(`.cell[data-z="${el.z}"]`);
+        if(cell) cell.classList.add("temp");
+      }
+    }
+  }
+}
+
+ptableEl.addEventListener("mousedown", (ev) => {
+  const cell = ev.target.closest(".cell");
+  if(!cell || cell.classList.contains("empty")) return;
+
+  isDragging = true;
+  dragStart = { r: Number(cell.dataset.row), c: Number(cell.dataset.col) };
+  dragMode = ev.shiftKey ? "add" : (ev.altKey ? "subtract" : "replace");
+  showTempRect(dragStart.r, dragStart.c, dragStart.r, dragStart.c);
+});
+
+window.addEventListener("mousemove", (ev) => {
+  if(!isDragging || !dragStart) return;
+  const cell = ev.target.closest(".cell");
+  if(!cell) return;
+  const r = Number(cell.dataset.row), c = Number(cell.dataset.col);
+  showTempRect(dragStart.r, dragStart.c, r, c);
+});
+
+window.addEventListener("mouseup", (ev) => {
+  if(!isDragging || !dragStart) return;
+  const cell = ev.target.closest(".cell");
+  const end = cell ? { r: Number(cell.dataset.row), c: Number(cell.dataset.col) } : dragStart;
+
+  const zs = rectCells(dragStart.r, dragStart.c, end.r, end.c);
+  if(dragMode === "replace"){
+    selected = new Set(zs);
+  } else if(dragMode === "add"){
+    for(const z of zs) selected.add(z);
+  } else if(dragMode === "subtract"){
+    for(const z of zs) selected.delete(z);
+  }
+
+  isDragging = false;
+  dragStart = null;
+  clearTemp();
+  applySelectedClasses();
+});
+
+/* ---------- Quiz logic ---------- */
+let currentZ = null;
+
+function normalizeAnswer(s){
+  return (s ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " "); // collapse spaces
+}
+
+function poolFromSelection(){
+  return Array.from(selected);
+}
+
+function missedPool(basePool){
+  // Elements with incorrect > correct (or just incorrect > 0) are "missed"
+  const missed = basePool.filter(z => (getElemStats(z).incorrect > 0));
+  return missed;
+}
+
+function weightedPick(basePool){
+  // Weight by (incorrect + 1) / (correct + 1) to emphasize misses.
+  // Also lightly weight by "not seen" to bring in new ones.
+  const weights = basePool.map(z => {
+    const st = getElemStats(z);
+    const ratio = (st.incorrect + 1) / (st.correct + 1);
+    const novelty = st.seen === 0 ? 1.6 : 1.0;
+    return ratio * novelty;
+  });
+
+  const total = weights.reduce((a,b)=>a+b,0);
+  let r = Math.random() * total;
+  for(let i=0;i<basePool.length;i++){
+    r -= weights[i];
+    if(r <= 0) return basePool[i];
+  }
+  return basePool[basePool.length-1];
+}
+
+function clearQuizHighlight(){
+  document.querySelectorAll(".cell.quiz").forEach(n => n.classList.remove("quiz"));
+}
+
+function setFeedback(kind, text){
+  feedbackEl.className = "feedback " + (kind || "");
+  feedbackEl.textContent = text || "";
+}
+
+function updatePoolStatus(){
+  const pool = poolFromSelection();
+  const missed = missedPool(pool);
+  poolStatus.textContent = `Selected pool: ${pool.length} element(s)${missedOnlyToggle.checked ? ` • Missed in pool: ${missed.length}` : ""}`;
+}
+
+function newQuestion(){
+  clearQuizHighlight();
+  setFeedback("", "");
+  answerInput.value = "";
+
+  const pool = poolFromSelection();
+  if(pool.length === 0){
+    currentZ = null;
+    quizPrompt.textContent = "No selection. Drag-select a region on the periodic table first.";
+    quizStatus.textContent = "Select a region, then click “Start / Next question”.";
+    answerInput.disabled = true;
+    submitBtn.disabled = true;
+    skipBtn.disabled = true;
+    revealBtn.disabled = true;
+    return;
+  }
+
+  let activePool = pool.slice();
+
+  if(missedOnlyToggle.checked){
+    const missed = missedPool(activePool);
+    if(missed.length > 0) activePool = missed;
+  }
+
+  currentZ = weightedPick(activePool);
+  const cell = document.querySelector(`.cell[data-z="${currentZ}"]`);
+  if(cell) cell.classList.add("quiz");
+
+  quizStatus.textContent = "Question active.";
+  quizPrompt.textContent = "What element is highlighted?";
+  answerInput.disabled = false;
+  submitBtn.disabled = false;
+  skipBtn.disabled = false;
+  revealBtn.disabled = false;
+  answerInput.focus();
+}
+
+function checkAnswer(){
+  if(currentZ == null) return;
+  const el = elementsByZ.get(currentZ);
+  const user = normalizeAnswer(answerInput.value);
+  const ok = (user === normalizeAnswer(el.name)) || (user === normalizeAnswer(el.sym));
+
+  if(ok){
+    setFeedback("good", `✅ Correct: ${el.name} (${el.sym})`);
+  } else {
+    setFeedback("bad", `❌ Incorrect. It was ${el.name} (${el.sym}).`);
+  }
+  recordAttempt({ z: currentZ, userAnswer: answerInput.value.trim(), correct: ok });
+
+  // Immediately move to next question (feel free to change this behavior)
+  newQuestion();
+}
+
+function skipQuestion(){
+  if(currentZ == null) return;
+  const el = elementsByZ.get(currentZ);
+  setFeedback("", `⏭️ Skipped. (It was ${el.name} (${el.sym}))`);
+  recordAttempt({ z: currentZ, userAnswer: "(skipped)", correct: false, skipped: true });
+  newQuestion();
+}
+
+function revealQuestion(){
+  if(currentZ == null) return;
+  const el = elementsByZ.get(currentZ);
+  setFeedback("bad", `👀 Reveal: ${el.name} (${el.sym})`);
+  recordAttempt({ z: currentZ, userAnswer: "(revealed)", correct: false, revealed: true });
+  newQuestion();
+}
+
+/* ---------- Sidebar rendering ---------- */
+function fmtTime(ts){
+  const d = new Date(ts);
+  return d.toLocaleString(undefined, { month:"short", day:"2-digit", hour:"2-digit", minute:"2-digit" });
+}
+
+function renderSidebar(){
+  // Aggregate stats
+  let totalAttempts = 0, totalCorrect = 0, totalIncorrect = 0;
+  for(const zStr of Object.keys(state.statsByZ)){
+    const st = state.statsByZ[zStr];
+    totalAttempts += (st.seen || 0);
+    totalCorrect += (st.correct || 0);
+    totalIncorrect += (st.incorrect || 0);
+  }
+  statAttempts.textContent = String(totalAttempts);
+  statCorrect.textContent = String(totalCorrect);
+  statIncorrect.textContent = String(totalIncorrect);
+  const denom = (totalCorrect + totalIncorrect);
+  const acc = denom === 0 ? 0 : Math.round((totalCorrect / denom) * 100);
+  statAcc.textContent = `${acc}%`;
+
+  // History table (latest 30)
+  historyBody.innerHTML = "";
+  const rows = state.log.slice(0, 30);
+  for(const r of rows){
+    const tr = document.createElement("tr");
+    const pillClass = (r.result === "OK") ? "good" : ((r.result === "NO" || r.result === "REVEAL") ? "bad" : "");
+    const pillText = (r.result === "OK") ? "OK" : (r.result === "NO" ? "NO" : r.result);
+    tr.innerHTML = `
+      <td><span class="pill ${pillClass}">${pillText}</span></td>
+      <td>${r.sym}</td>
+      <td>${escapeHtml(r.userAnswer || "")}</td>
+      <td>${fmtTime(r.t)}</td>
+    `;
+    historyBody.appendChild(tr);
+  }
+
+  // Most missed chips in current selection
+  const pool = poolFromSelection();
+  const missedRanked = pool
+    .map(z => {
+      const st = getElemStats(z);
+      return { z, incorrect: st.incorrect, correct: st.correct, seen: st.seen };
+    })
+    .filter(x => x.incorrect > 0)
+    .sort((a,b) => (b.incorrect - a.incorrect) || ((a.correct - b.correct)) )
+    .slice(0, 10);
+
+  missedChips.innerHTML = "";
+  if(missedRanked.length === 0){
+    const chip = document.createElement("div");
+    chip.className = "chip";
+    chip.textContent = pool.length === 0
+      ? "No selection yet."
+      : "Nothing missed in the selected pool (yet).";
+    missedChips.appendChild(chip);
+  } else {
+    for(const x of missedRanked){
+      const el = elementsByZ.get(x.z);
+      const chip = document.createElement("div");
+      chip.className = "chip";
+      chip.innerHTML = `${el.sym} <span style="color:rgba(255,255,255,0.65)">(${el.name})</span> — missed <b>${x.incorrect}</b>`;
+      missedChips.appendChild(chip);
+    }
+  }
+}
+
+function escapeHtml(s){
+  return (s ?? "").replace(/[&<>"']/g, (ch) => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[ch]));
+}
+
+/* ---------- Buttons / events ---------- */
+clearSelBtn.addEventListener("click", () => {
+  selected.clear();
+  applySelectedClasses();
+  clearQuizHighlight();
+  currentZ = null;
+  newQuestion(); // will show “no selection” state
+});
+
+selectAllBtn.addEventListener("click", () => {
+  selected = new Set(Array.from(elementsByZ.keys()));
+  applySelectedClasses();
+});
+
+startQuizBtn.addEventListener("click", () => newQuestion());
+submitBtn.addEventListener("click", () => checkAnswer());
+skipBtn.addEventListener("click", () => skipQuestion());
+revealBtn.addEventListener("click", () => revealQuestion());
+
+answerInput.addEventListener("keydown", (ev) => {
+  if(ev.key === "Enter"){
+    ev.preventDefault();
+    checkAnswer();
+  }
+});
+
+resetHistoryBtn.addEventListener("click", () => {
+  if(!confirm("Reset all history & stats? This cannot be undone.")) return;
+  state = { statsByZ: {}, log: [] };
+  saveState();
+  renderSidebar();
+});
+
+missedOnlyToggle.addEventListener("change", () => {
+  updatePoolStatus();
+});
+
+// Initial render
+applySelectedClasses();
+renderSidebar();
+updatePoolStatus();
+</script>
+</body>
+</html>
