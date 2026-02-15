@@ -758,6 +758,7 @@ window.addEventListener("mouseup", (ev) => {
 
 /* ---------- Quiz logic ---------- */
 let currentZ = null;
+let awaitingNext = false;
 
 function setQuizMode(on){
   document.body.classList.toggle("quiz-mode", !!on);
@@ -853,6 +854,13 @@ function newQuestion(){
 function checkAnswer(){
   if(currentZ == null) return;
 
+  // If already answered, pressing Enter advances
+  if(awaitingNext){
+    awaitingNext = false;
+    newQuestion();
+    return;
+  }
+
   const el = elementsByZ.get(currentZ);
   const user = normalizeAnswer(answerInput.value);
 
@@ -878,8 +886,9 @@ function checkAnswer(){
   skipBtn.disabled = true;
   revealBtn.disabled = true;
 
-  // Change button text
   startQuizBtn.textContent = "Next question";
+
+  awaitingNext = true;  // Now Enter will advance
 }
 
 
