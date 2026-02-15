@@ -811,6 +811,7 @@ function updatePoolStatus(){
 }
 
 function newQuestion(){
+  startQuizBtn.textContent = "Start / Next question";
   clearQuizHighlight();
   setFeedback("", "");
   answerInput.value = "";
@@ -874,11 +875,27 @@ function skipQuestion(){
 
 function revealQuestion(){
   if(currentZ == null) return;
+
   const el = elementsByZ.get(currentZ);
+
   setFeedback("bad", `👀 Reveal: ${el.name} (${el.sym})`);
-  recordAttempt({ z: currentZ, userAnswer: "(revealed)", correct: false, revealed: true });
-  newQuestion();
+  recordAttempt({
+    z: currentZ,
+    userAnswer: "(revealed)",
+    correct: false,
+    revealed: true
+  });
+
+  // Disable answering after reveal
+  answerInput.disabled = true;
+  submitBtn.disabled = true;
+  skipBtn.disabled = true;
+  revealBtn.disabled = true;
+
+  // Change the main button to move on
+  startQuizBtn.textContent = "Next question";
 }
+
 
 /* ---------- Sidebar rendering ---------- */
 function fmtTime(ts){
