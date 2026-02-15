@@ -812,6 +812,9 @@ function updatePoolStatus(){
 }
 
 function newQuestion(){
+  awaitingNext = false;
+  answerInput.readOnly = false;
+
   startQuizBtn.textContent = "Start / Next question";
   clearQuizHighlight();
   setFeedback("", "");
@@ -881,14 +884,18 @@ function checkAnswer(){
   });
 
   // Disable input after answering
-  answerInput.disabled = true;
-  submitBtn.disabled = true;
-  skipBtn.disabled = true;
-  revealBtn.disabled = true;
+  answerInput.readOnly = true;     // keep focus + key events
+submitBtn.disabled = true;
+skipBtn.disabled = true;
+revealBtn.disabled = true;
 
-  startQuizBtn.textContent = "Next question";
+startQuizBtn.textContent = "Next question";
+awaitingNext = true;
 
-  awaitingNext = true;  // Now Enter will advance
+// keep keyboard flow
+answerInput.focus();
+answerInput.select();
+
 }
 
 
