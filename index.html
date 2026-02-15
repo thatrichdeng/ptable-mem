@@ -852,18 +852,36 @@ function newQuestion(){
 
 function checkAnswer(){
   if(currentZ == null) return;
+
   const el = elementsByZ.get(currentZ);
   const user = normalizeAnswer(answerInput.value);
-  const ok = (user === normalizeAnswer(el.name)) || (user === normalizeAnswer(el.sym));
+
+  const ok =
+    (user === normalizeAnswer(el.name)) ||
+    (user === normalizeAnswer(el.sym));
 
   if(ok){
     setFeedback("good", `✅ Correct: ${el.name} (${el.sym})`);
   } else {
     setFeedback("bad", `❌ Incorrect. It was ${el.name} (${el.sym}).`);
   }
-  recordAttempt({ z: currentZ, userAnswer: answerInput.value.trim(), correct: ok });
-  newQuestion();
+
+  recordAttempt({
+    z: currentZ,
+    userAnswer: answerInput.value.trim(),
+    correct: ok
+  });
+
+  // Disable input after answering
+  answerInput.disabled = true;
+  submitBtn.disabled = true;
+  skipBtn.disabled = true;
+  revealBtn.disabled = true;
+
+  // Change button text
+  startQuizBtn.textContent = "Next question";
 }
+
 
 function skipQuestion(){
   if(currentZ == null) return;
